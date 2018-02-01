@@ -1,8 +1,10 @@
 package com.actuator;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -10,46 +12,34 @@ import java.util.List;
 public class AccountController {
 
     @Autowired
-    IAccountService accountService;
+    AccountRepository accountRepository;
 
     @RequestMapping(value = "/lists",method = RequestMethod.GET)
     public List<Account> getAccounts(){
-        return accountService.findAccountList();
+        return accountRepository.findAll();
     }
 
     @RequestMapping(value = "/{id}",method = RequestMethod.GET)
-    public  Account getAccountById(@PathVariable("id") int id){
-        return accountService.findAccountById(id);
+    public  Account getAccountById(@PathVariable("id") Long id){
+        return accountRepository.findOne(id);
     }
 
     @RequestMapping(value = "/{id}",method = RequestMethod.PUT)
-    public  String updateAccount(@PathVariable("id")int id , @RequestParam(value = "name",required = true)String name,
-                                 @RequestParam(value = "money" ,required = true)double money){
-        Account account=new Account();
-        account.setMoney(money);
-        account.setName(name);
-        account.setId(id);
-        int t=accountService.update(account);
-        if(t==1){
-            return account.toString();
-        }else {
-            return "fail";
+    public  ResponseEntity<Account> updateAccount(@PathVariable("id")Long id , @Valid @RequestBody Account account){
+        Account a = accountRepository.findOne(id);
+        if(a == null) {
+            return ResponseEntity.notFound().build();
         }
+        a.setName(account.getName());
+        a.setMoney(account.getMoney());
+
+        Account updated = accountRepository.save(account);
+        return ResponseEntity.ok(updated);
     }
 
     @RequestMapping(value = "",method = RequestMethod.POST)
-    public  String postAccount( @RequestParam(value = "name")String name,
-                                @RequestParam(value = "money" )double money){
-        Account account=new Account();
-        account.setMoney(money);
-        account.setName(name);
-        int t= accountService.add(account);
-        if(t==1){
-            return account.toString();
-        }else {
-            return "fail";
-        }
-
+    public Account postAccount( @Valid @RequestBody Account account){
+        return accountRepository.save(account);
     }
 
 }
